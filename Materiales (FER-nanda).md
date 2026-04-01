@@ -6,9 +6,9 @@
 
 Aquí ocupo que me añadan la información de los nuevos elementos o en su defecto me manden una cosa con la estructura:
 Nombre
-Cantidad
-Precio
-Link
-Link imagen
+- Cantidad
+- Precio
+- Link
+- Link imagen
 
 Sientanse libres de moverle a lo que quieran
