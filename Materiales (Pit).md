@@ -1,10 +1,3 @@
-## Oigan aquí necesito que investiguen y me pasen los links y un link de imágenes
-El que lo haga necesito que me lo pase con mensajes con esta estructura:
-### Structure:
-- Nombre
-- Link
-- Link imagen
-
 | Nombre | Cantidad | Precio c/u | Link | Imagen |
 |:---:|:---:|:---:|:---:|:---:|
 | Palomitas | 1 | $0.00 MXN | [Nombre Link](https://placeholder/) | ![img](Link_imagen) |
