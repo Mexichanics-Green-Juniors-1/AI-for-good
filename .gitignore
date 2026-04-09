@@ -8,5 +8,4 @@ env/
 venv/
 .idea/
 *.iml
-FER-nanda/Código/.pio/
-FER-nanda/Código/compile_commands.json
+src/platformio.ini
