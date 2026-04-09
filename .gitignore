@@ -8,5 +8,6 @@ env/
 venv/
 .idea/
 *.iml
-FER-nanda/Código/.pio/
-FER-nanda/Código/compile_commands.json
+.pio/
+build/
+compile_commands.json
