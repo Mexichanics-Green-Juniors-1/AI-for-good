@@ -8,3 +8,4 @@ La idea es que en un tiempo tengamos un robot completo, que sea teleoperado para
 ### Índice
 - [Modelo 3D](./FER-nanda.stl)
 - [Materiales](./Materiales%20(FER-nanda).md)
+- [Link](https://cad.onshape.com/documents/8b8a834fbd4b85bb0eff8fca/w/bd1cbc69c4f7d92c1fcc2a74/e/b71a2af07e83075286ce13ed)
