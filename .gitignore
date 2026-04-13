@@ -8,4 +8,6 @@ env/
 venv/
 .idea/
 *.iml
-src/platformio.ini
+.pio/
+build/
+compile_commands.json
