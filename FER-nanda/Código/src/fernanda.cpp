@@ -53,7 +53,7 @@ void setup(){
         pinMode(IN[i], OUTPUT);
     }
     Motor.attach(motor);
-    Motor.write(0);
+    Motor.write(maxHeight);
 }
 
 void loop(){
@@ -96,7 +96,7 @@ void loop(){
                 Serial.println("Error");
             break;
         }
-    } else if(btState == Sensing){ // Entonces, si el Servo NO está arriba (Osea, está abajo), va a revisar si está sensando, y en caso de estarlo, sensar
+    } else if(btState == Sensing && ServoState == Down){ // Entonces, si el Servo NO está arriba (Osea, está abajo), va a revisar si está sensando, y en caso de estarlo, sensar
         int lectura = analogRead(yl);
         int humedad = map(lectura, 1023, 0, 0, 100); 
         Bluetooth.print("Humedad detectada: ");
@@ -104,14 +104,16 @@ void loop(){
         Bluetooth.println("%");
         btState = Stop;
     }
-    if(btState == ServoChanging && ServoState == Up){ // Si el servo está arriba y está cambiando baja, y si está abajo sube
-        Motor.write(minHeight);
-        ServoState = Down;
-        btState = Stop;
-    } else if(btState == ServoChanging && ServoState == Down){
-       Motor.write(maxHeight);
-       ServoState = Up;
-       btState = Stop;
+    if(btState == ServoChanging){
+        if(ServoState == Up){
+            Motor.write(minHeight);
+            ServoState = Down;
+            btState = Stop;
+        } else{
+            Motor.write(maxHeight);
+            ServoState = Up;
+            btState = Stop;
+        }
     }
     if(ServoState == Down){
         digitalWrite(IN[0], LOW);
