@@ -96,7 +96,7 @@ void loop(){
                 Serial.println("Error");
             break;
         }
-    } else if(btState == Sensing){ // Entonces, si el Servo NO está arriba (Osea, está abajo), va a revisar si está sensando, y en caso de estarlo, sensar
+    } else if(btState == Sensing && ServoState == Down){ // Entonces, si el Servo NO está arriba (Osea, está abajo), va a revisar si está sensando, y en caso de estarlo, sensar
         int lectura = analogRead(yl);
         int humedad = map(lectura, 1023, 0, 0, 100); 
         Bluetooth.print("Humedad detectada: ");

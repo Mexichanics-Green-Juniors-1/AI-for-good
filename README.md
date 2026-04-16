@@ -1,4 +1,5 @@
 ## Somos Mexichanics Green, hermanos de Mexichanics White y Mexichanics Red (Senior), Partícipes de la competencia "AI for Good"
+
 Miembros del equipo:
 | :--: |
 | Sinnai (Coach) |
