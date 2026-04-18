@@ -1,51 +1,75 @@
-/*
-    Autor: Mexichanics Green (Jorge)
-    Programa: FER-nanda RC
-*/
-
 #include <Arduino.h>
+#include <WiFi.h>
+#include <esp_now.h>
 #include <LiquidCrystal.h>
-#include <SoftwareSerial.h>
 
-// LCD (RS, E, D4, D5, D6, D7)
+// LCD
 LiquidCrystal lcd(7, 6, 5, 4, 3, 2);
 
-// Bluetooth (RX, TX)
-SoftwareSerial BT(10, 11);
-
 // Joystick
-uint8_t joyX = A0;
-uint8_t joyY = A1;
-uint8_t joyBtn = 8;
+uint8_t joyX = 34;
+uint8_t joyY = 35;
+uint8_t joyBtn = 32;
 
 // Botón extra
-uint8_t btnSense = 9;
+uint8_t btnSense = 33;
 
-// Umbrales joystick
+// Umbrales calibrables
 int deadZoneMin = 400;
 int deadZoneMax = 600;
 
 int thresholdLow = 300;
 int thresholdHigh = 700;
 
-// Delay debounce
 int debounceDelay = 200;
-
-// Delay loop
 int loopDelay = 50;
+
+// Dirección MAC del receptor (CAMBIA ESTO)
+uint8_t receiverMAC[] = {0x24, 0x6F, 0x28, 0xXX, 0xXX, 0xXX};
 
 // Estado
 char lastSent = 'S';
 
+// Estructura de datos
+typedef struct {
+    char command;
+} Message;
+
+Message msg;
+
+// Callback (opcional)
+void onSent(const uint8_t *mac_addr, esp_now_send_status_t status) {
+    Serial.print("Envio: ");
+    Serial.println(status == ESP_NOW_SEND_SUCCESS ? "OK" : "Fallo");
+}
+
 void setup(){
-    Serial.begin(9600);   // opcional debug
-    BT.begin(9600);
+    Serial.begin(115200);
 
     pinMode(joyBtn, INPUT_PULLUP);
     pinMode(btnSense, INPUT_PULLUP);
 
     lcd.begin(16, 2);
-    lcd.print("RC Ready");
+    lcd.print("RC ESP32");
+
+    WiFi.mode(WIFI_STA);
+
+    if(esp_now_init() != ESP_OK){
+        Serial.println("Error ESP-NOW");
+        return;
+    }
+
+    esp_now_register_send_cb(onSent);
+
+    esp_now_peer_info_t peerInfo = {};
+    memcpy(peerInfo.peer_addr, receiverMAC, 6);
+    peerInfo.channel = 0;
+    peerInfo.encrypt = false;
+
+    if(esp_now_add_peer(&peerInfo) != ESP_OK){
+        Serial.println("Error peer");
+        return;
+    }
 }
 
 void loop(){
@@ -62,7 +86,7 @@ void loop(){
     else if(x > deadZoneMin && x < deadZoneMax && y > deadZoneMin && y < deadZoneMax)
         command = 'S';
 
-    // Prioridad: sensado > servo
+    // Prioridad
     if(!digitalRead(btnSense)){
         command = 'X';
         delay(debounceDelay);
@@ -72,20 +96,11 @@ void loop(){
         delay(debounceDelay);
     }
 
-    // Enviar solo si cambia
+    // Enviar
     if(command != lastSent){
-        BT.write(command);
+        msg.command = command;
+        esp_now_send(receiverMAC, (uint8_t *) &msg, sizeof(msg));
         lastSent = command;
-    }
-
-    // Mostrar datos recibidos (sin parpadeo)
-    if(BT.available()){
-        lcd.setCursor(0, 1); // segunda línea
-
-        while(BT.available()){
-            char c = BT.read();
-            lcd.print(c);
-        }
     }
 
     delay(loopDelay);
