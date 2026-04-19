@@ -7,55 +7,46 @@
 #include <BluetoothSerial.h>
 #include <LiquidCrystal_I2C.h>
 
-// Bluetooth
 BluetoothSerial BT;
 
-// LCD I2C
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 
-// Joystick (ESP32 ADC1)
-uint8_t joyX = 34;
-uint8_t joyY = 35;
-uint8_t joyButton = 32;
+const uint8_t joyX = 34;
+const uint8_t joyY = 35;
+const uint8_t joyButton = 32;
 
-// Botón extra
-uint8_t button = 33;
+const uint8_t button = 33;
 
-// Umbrales
-int thresholdLow = 300;
-int thresholdHigh = 700;
+const int thresholdLow = 300;
+const int thresholdHigh = 700;
+const int deadZoneMin = 400;
+const int deadZoneMax = 600;
 
-// Zona muerta
-int deadZoneMin = 400;
-int deadZoneMax = 600;
-
-// Estado
 char lastSent = 'S';
 
-// Debounce independiente
 unsigned long lastBtn1 = 0;
 unsigned long lastBtn2 = 0;
-const int debounceDelay = 300;
+const int debounceDelay = 250;
 
 void setup() {
     Serial.begin(115200);
 
-    BT.begin("FER-nanda_RC");
+    BT.begin("FER-nanda_RC", true);
 
     pinMode(joyButton, INPUT_PULLUP);
     pinMode(button, INPUT_PULLUP);
 
     lcd.init();
     lcd.backlight();
+
     lcd.setCursor(0, 0);
-    lcd.print("BT RC Ready");
+    lcd.print("RC Ready");
 }
 
 void loop() {
 
     char command = 'S';
 
-    // Botones (prioridad)
     if (!digitalRead(button) && millis() - lastBtn1 > debounceDelay) {
         command = 'X';
         lastBtn1 = millis();
@@ -72,28 +63,26 @@ void loop() {
         else if (y < thresholdLow) command = 'B';
         else if (x > thresholdHigh) command = 'R';
         else if (x < thresholdLow) command = 'L';
-        else if (x > deadZoneMin && x < deadZoneMax &&
-                 y > deadZoneMin && y < deadZoneMax) {
-            command = 'S';
-        }
+        else command = 'S';
     }
 
-    // Envío solo si cambia
     if (command != lastSent) {
         BT.write(command);
         lastSent = command;
     }
 
-    // Recepción
-    if (BT.available()) {
+    String msg = "";
+
+    while (BT.available()) {
+        msg += (char)BT.read();
+    }
+
+    if (msg.length() > 0) {
         lcd.setCursor(0, 1);
         lcd.print("                ");
         lcd.setCursor(0, 1);
-
-        while (BT.available()) {
-            lcd.print((char)BT.read());
-        }
+        lcd.print(msg);
     }
 
-    delay(50);
+    delay(40);
 }

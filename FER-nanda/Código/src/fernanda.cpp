@@ -3,12 +3,10 @@
     Programa: FER-nanda
 */
 
-// Librerías
-#include<Arduino.h>
-#include<Servo.h>
+#include <Arduino.h>
+#include <Servo.h>
 
-// Enums
-enum State{
+enum State {
     Stop,
     Forward,
     Backward,
@@ -16,106 +14,136 @@ enum State{
     Right,
     Sensing,
     ServoChanging
-}, ServoHeight{
+};
+
+enum ServoHeight {
     Up,
     Down
 };
-// Variables
+
 State btState = Stop;
 ServoHeight ServoState = Up;
+
 HardwareSerial &Bluetooth = Serial1;
-int minHeight = 30, maxHeight = 0;
-// Pines
+
+const int minHeight = 30;
+const int maxHeight = 0;
+
 uint8_t IN[] = {8, 9, 10, 11};
-uint8_t motor = 12, yl = A0;
-// Servos
+uint8_t motorPin = 12;
+uint8_t yl = A0;
+
 Servo Motor;
 
-// Actualizar State usando BT
-State btUpdate(HardwareSerial &btHere){
+State btUpdate(HardwareSerial &btHere) {
+    if (!btHere.available()) return Stop;
+
     char dato = btHere.read();
-    switch(dato) {
-        case 'S': return(Stop);    break;
-        case 'F': return(Forward); break;
-        case 'B': return(Backward);break;
-        case 'L': return(Left);    break;
-        case 'R': return(Right);   break;
-        case 'V': return(ServoChanging); break;
-        case 'X': return(Sensing); break;
-        default: return(Stop); break;
+
+    switch (dato) {
+        case 'S': return Stop;
+        case 'F': return Forward;
+        case 'B': return Backward;
+        case 'L': return Left;
+        case 'R': return Right;
+        case 'V': return ServoChanging;
+        case 'X': return Sensing;
+        default: return Stop;
     }
 }
 
-void setup(){
+void setup() {
     Serial.begin(9600);
     Bluetooth.begin(9600);
-    for(uint8_t i = 0; i < 4; i++){
+
+    for (uint8_t i = 0; i < 4; i++) {
         pinMode(IN[i], OUTPUT);
     }
-    Motor.attach(motor);
+
+    Motor.attach(motorPin);
     Motor.write(maxHeight);
 }
 
-void loop(){
-    if(Bluetooth.available()){
-        btState = btUpdate(Bluetooth);
-    }
-    if(ServoState == Up){ // Así ni el servo ni el sensor se dañan porque el robot avanza mientras están ente
-        switch(btState){
-            case Stop:
-                digitalWrite(IN[0], LOW);
-                digitalWrite(IN[1], LOW);
-                digitalWrite(IN[2], LOW);
-                digitalWrite(IN[3], LOW);
-            break;
-            case Forward:
-                digitalWrite(IN[0], HIGH);
-                digitalWrite(IN[1], LOW);
-                digitalWrite(IN[2], HIGH);
-                digitalWrite(IN[3], LOW);
-            break;
-            case Backward:
-                digitalWrite(IN[0], LOW);
-                digitalWrite(IN[1], HIGH);
-                digitalWrite(IN[2], LOW);
-                digitalWrite(IN[3], HIGH);
-            break;
-            case Left:
-                digitalWrite(IN[0], LOW);
-                digitalWrite(IN[1], HIGH);
-                digitalWrite(IN[2], HIGH);
-                digitalWrite(IN[3], LOW);
-            break; 
-            case Right:
-                digitalWrite(IN[0], HIGH);
-                digitalWrite(IN[1], LOW);
-                digitalWrite(IN[2], LOW);
-                digitalWrite(IN[3], HIGH);
-            break;
-            default:
-                Serial.println("Error");
-            break;
+void loop() {
+
+    btState = btUpdate(Bluetooth);
+
+    // ---------------- MOVIMIENTO ----------------
+    if (ServoState == Up) {
+
+        if (btState == Stop) {
+            digitalWrite(IN[0], LOW);
+            digitalWrite(IN[1], LOW);
+            digitalWrite(IN[2], LOW);
+            digitalWrite(IN[3], LOW);
         }
-    } else if(btState == Sensing && ServoState == Down){ // Entonces, si el Servo NO está arriba (Osea, está abajo), va a revisar si está sensando, y en caso de estarlo, sensar
+
+        else if (btState == Forward) {
+            digitalWrite(IN[0], HIGH);
+            digitalWrite(IN[1], LOW);
+            digitalWrite(IN[2], HIGH);
+            digitalWrite(IN[3], LOW);
+        }
+
+        else if (btState == Backward) {
+            digitalWrite(IN[0], LOW);
+            digitalWrite(IN[1], HIGH);
+            digitalWrite(IN[2], LOW);
+            digitalWrite(IN[3], HIGH);
+        }
+
+        else if (btState == Left) {
+            digitalWrite(IN[0], LOW);
+            digitalWrite(IN[1], HIGH);
+            digitalWrite(IN[2], HIGH);
+            digitalWrite(IN[3], LOW);
+        }
+
+        else if (btState == Right) {
+            digitalWrite(IN[0], HIGH);
+            digitalWrite(IN[1], LOW);
+            digitalWrite(IN[2], LOW);
+            digitalWrite(IN[3], HIGH);
+        }
+
+        else {
+            digitalWrite(IN[0], LOW);
+            digitalWrite(IN[1], LOW);
+            digitalWrite(IN[2], LOW);
+            digitalWrite(IN[3], LOW);
+        }
+    }
+
+    // ---------------- SENSOR ----------------
+    else if (btState == Sensing && ServoState == Down) {
+
         int lectura = analogRead(yl);
-        int humedad = map(lectura, 1023, 0, 0, 100); 
-        Bluetooth.print("Humedad detectada: ");
+        int humedad = map(lectura, 1023, 0, 0, 100);
+
+        Bluetooth.print("Humedad: ");
         Bluetooth.print(humedad);
         Bluetooth.println("%");
+
         btState = Stop;
     }
-    if(btState == ServoChanging){
-        if(ServoState == Up){
+
+    // ---------------- SERVO ----------------
+    if (btState == ServoChanging) {
+
+        if (ServoState == Up) {
             Motor.write(minHeight);
             ServoState = Down;
-            btState = Stop;
-        } else{
+        }
+        else {
             Motor.write(maxHeight);
             ServoState = Up;
-            btState = Stop;
         }
+
+        btState = Stop;
     }
-    if(ServoState == Down){
+
+    // seguridad motor apagado si está abajo
+    if (ServoState == Down) {
         digitalWrite(IN[0], LOW);
         digitalWrite(IN[1], LOW);
         digitalWrite(IN[2], LOW);
